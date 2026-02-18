@@ -1,0 +1,843 @@
+openapi: 3.1.0
+info:
+  title: speak-gwop API
+  version: 0.1.0
+  description: |
+    Standalone agent-native TTS store.
+
+    Flow:
+    1) Create Speak identity
+    2) Login for Bearer token
+    3) Buy credits via Gwop invoice
+    4) Claim paid credits
+    5) Submit async TTS jobs
+    6) Poll job and download artifact URL
+servers:
+  - url: http://localhost:3020
+tags:
+  - name: Discovery
+  - name: Agents
+  - name: Credits
+  - name: TTS
+  - name: Infra
+paths:
+  /help:
+    get:
+      tags: [Discovery]
+      summary: Agent guidance and flow contract
+      responses:
+        '200':
+          description: Help payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HelpResponse'
+  /skill.md:
+    get:
+      tags: [Discovery]
+      summary: Agent skill playbook document
+      responses:
+        '200':
+          description: Skill markdown
+          content:
+            text/markdown:
+              schema:
+                type: string
+  /speak-openapi.yaml:
+    get:
+      tags: [Discovery]
+      summary: Service OpenAPI contract document
+      responses:
+        '200':
+          description: OpenAPI YAML
+          content:
+            application/yaml:
+              schema:
+                type: string
+            text/yaml:
+              schema:
+                type: string
+  /health:
+    get:
+      tags: [Infra]
+      summary: Service health and runtime status
+      responses:
+        '200':
+          description: Health payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /v1/agents/init/preflight:
+    get:
+      tags: [Agents]
+      summary: Preflight requirements and auth model
+      responses:
+        '200':
+          description: Preflight payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentInitPreflightResponse'
+  /v1/agents/init:
+    post:
+      tags: [Agents]
+      summary: Create Speak agent identity
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentInitRequest'
+      responses:
+        '201':
+          description: Agent created (login_code shown once)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentInitResponse'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '500':
+          $ref: '#/components/responses/Error500'
+  /v1/agents/login:
+    post:
+      tags: [Agents]
+      summary: Exchange agent_id + login_code for session token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentLoginRequest'
+      responses:
+        '200':
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentLoginResponse'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '500':
+          $ref: '#/components/responses/Error500'
+  /v1/agents/status:
+    get:
+      tags: [Agents]
+      summary: Current Speak agent status and credit balance
+      parameters:
+        - $ref: '#/components/parameters/OperatorApiKeyHeader'
+      security:
+        - BearerAuth: []
+        - SpeakTokenHeader: []
+      responses:
+        '200':
+          description: Agent status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentStatusResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '500':
+          $ref: '#/components/responses/Error500'
+  /catalog.json:
+    get:
+      tags: [Credits]
+      summary: Credit package catalog
+      responses:
+        '200':
+          description: Catalog payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogResponse'
+  /v1/credits/invoices:
+    post:
+      tags: [Credits]
+      summary: Create Gwop invoice for a credit SKU
+      parameters:
+        - $ref: '#/components/parameters/OperatorApiKeyHeader'
+      security:
+        - BearerAuth: []
+        - SpeakTokenHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCreditInvoiceRequest'
+      responses:
+        '201':
+          description: Invoice created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCreditInvoiceResponse'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '502':
+          $ref: '#/components/responses/Error502'
+        '503':
+          $ref: '#/components/responses/Error503'
+  /v1/orders/{id}:
+    get:
+      tags: [Credits]
+      summary: Fetch local order and related invoice state
+      parameters:
+        - $ref: '#/components/parameters/OperatorApiKeyHeader'
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      security:
+        - BearerAuth: []
+        - SpeakTokenHeader: []
+      responses:
+        '200':
+          description: Order payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetOrderResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '500':
+          $ref: '#/components/responses/Error500'
+  /v1/credits/claim:
+    post:
+      tags: [Credits]
+      summary: Claim credits for a paid invoice
+      parameters:
+        - $ref: '#/components/parameters/OperatorApiKeyHeader'
+      security:
+        - BearerAuth: []
+        - SpeakTokenHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimCreditsRequest'
+      responses:
+        '200':
+          description: Credits claimed or already claimed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimCreditsResponse'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '502':
+          $ref: '#/components/responses/Error502'
+        '500':
+          $ref: '#/components/responses/Error500'
+  /v1/voices:
+    get:
+      tags: [TTS]
+      summary: List available voices from active provider
+      parameters:
+        - $ref: '#/components/parameters/OperatorApiKeyHeader'
+      security:
+        - BearerAuth: []
+        - SpeakTokenHeader: []
+      responses:
+        '200':
+          description: Voices listed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoicesResponse'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '502':
+          $ref: '#/components/responses/Error502'
+  /v1/tts/jobs:
+    post:
+      tags: [TTS]
+      summary: Create async TTS job (reserves characters)
+      parameters:
+        - $ref: '#/components/parameters/OperatorApiKeyHeader'
+      security:
+        - BearerAuth: []
+        - SpeakTokenHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTtsJobRequest'
+      responses:
+        '202':
+          description: Job queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateTtsJobResponse'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '402':
+          $ref: '#/components/responses/Error402'
+        '500':
+          $ref: '#/components/responses/Error500'
+  /v1/tts/jobs/{id}:
+    get:
+      tags: [TTS]
+      summary: Read TTS job status and result
+      parameters:
+        - $ref: '#/components/parameters/OperatorApiKeyHeader'
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      security:
+        - BearerAuth: []
+        - SpeakTokenHeader: []
+      responses:
+        '200':
+          description: Job payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TtsJobRecord'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+  /webhooks/gwop:
+    post:
+      tags: [Infra]
+      summary: Receive Gwop invoice events
+      description: |
+        Handles `invoice.paid`, `invoice.expired`, and `invoice.canceled` transitions.
+      parameters:
+        - in: header
+          name: x-gwop-signature
+          required: false
+          schema:
+            type: string
+          description: Required when GWOP_WEBHOOK_SECRET is configured.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GwopWebhookEvent'
+      responses:
+        '200':
+          description: Event accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '500':
+          $ref: '#/components/responses/Error500'
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: token
+    SpeakTokenHeader:
+      type: apiKey
+      in: header
+      name: x-speak-access-token
+  parameters:
+    OperatorApiKeyHeader:
+      in: header
+      name: x-api-key
+      required: false
+      schema:
+        type: string
+      description: Required only when deployment sets MASTER_API_KEY.
+  responses:
+    Error400:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Error401:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Error402:
+      description: Payment required / insufficient credits
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Error403:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Error404:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Error409:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Error500:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Error502:
+      description: Upstream/provider failure
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Error503:
+      description: Service unavailable / not configured
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+              additionalProperties: true
+    HelpResponse:
+      type: object
+      additionalProperties: true
+    HealthResponse:
+      type: object
+      required: [status, timestamp, provider]
+      properties:
+        status:
+          type: string
+          example: ok
+        timestamp:
+          type: string
+          format: date-time
+        provider:
+          type: string
+    AgentInitPreflightResponse:
+      type: object
+      required: [version, service, flow]
+      properties:
+        version:
+          type: string
+        service:
+          type: string
+        purpose:
+          type: string
+        required_fields:
+          type: object
+          additionalProperties: true
+        identity:
+          type: object
+          additionalProperties: true
+        auth:
+          type: object
+          additionalProperties: true
+        flow:
+          type: array
+          items:
+            type: string
+        session_required_endpoints:
+          type: array
+          items:
+            type: string
+        notes:
+          type: array
+          items:
+            type: string
+    AgentInitRequest:
+      type: object
+      properties:
+        agent_name:
+          type: string
+          minLength: 2
+          maxLength: 80
+    AgentInitResponse:
+      type: object
+      required: [agent_id, agent_name, status, created_at, login_code, next_step]
+      properties:
+        agent_id:
+          type: string
+        agent_name:
+          type: string
+        status:
+          type: string
+          enum: [ACTIVE]
+        created_at:
+          type: string
+          format: date-time
+        login_code:
+          type: string
+        note:
+          type: string
+        next_step:
+          type: string
+    AgentLoginRequest:
+      type: object
+      required: [agent_id, login_code]
+      properties:
+        agent_id:
+          type: string
+        login_code:
+          type: string
+    AgentLoginResponse:
+      type: object
+      required: [agent_id, token, token_type, expires_at, expires_in_seconds]
+      properties:
+        agent_id:
+          type: string
+        token:
+          type: string
+        token_type:
+          type: string
+          example: Bearer
+        expires_at:
+          type: string
+          format: date-time
+        expires_in_seconds:
+          type: integer
+        agent_name:
+          type: string
+          nullable: true
+    AgentStatusResponse:
+      type: object
+      required:
+        [agent_id, agent_name, status, created_at, last_seen_at, characters_remaining, capabilities]
+      properties:
+        agent_id:
+          type: string
+        agent_name:
+          type: string
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        last_seen_at:
+          type: string
+          format: date-time
+        characters_remaining:
+          type: integer
+        capabilities:
+          type: object
+          properties:
+            create_credit_invoice:
+              type: boolean
+            claim_credits:
+              type: boolean
+            create_tts_jobs:
+              type: boolean
+    CatalogItem:
+      type: object
+      required: [id, label, amount_usdc, characters, currency]
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        amount_usdc:
+          type: integer
+        characters:
+          type: integer
+        currency:
+          type: string
+          enum: [USDC]
+    CatalogResponse:
+      type: object
+      required: [version, product, currency, items]
+      properties:
+        version:
+          type: string
+        product:
+          type: string
+        currency:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogItem'
+    CreateCreditInvoiceRequest:
+      type: object
+      required: [sku]
+      properties:
+        sku:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 1
+    CreateCreditInvoiceResponse:
+      type: object
+      required:
+        [order_id, speak_agent_id, invoice_id, status, sku, quantity, chars_to_grant, amount_usdc]
+      properties:
+        order_id:
+          type: string
+        speak_agent_id:
+          type: string
+        invoice_id:
+          type: string
+        status:
+          type: string
+          enum: [OPEN, PAID, CREDITED, EXPIRED, CANCELED]
+        sku:
+          type: string
+        quantity:
+          type: integer
+        chars_to_grant:
+          type: integer
+        amount_usdc:
+          type: integer
+        pay_url:
+          type: string
+          nullable: true
+        payment_address:
+          type: string
+          nullable: true
+        payment_details_url:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+    GetOrderResponse:
+      type: object
+      required: [order, invoice, warnings]
+      properties:
+        order:
+          type: object
+          additionalProperties: true
+        invoice:
+          oneOf:
+            - type: object
+              additionalProperties: true
+            - type: 'null'
+        warnings:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+    ClaimCreditsRequest:
+      type: object
+      required: [invoice_id]
+      properties:
+        invoice_id:
+          type: string
+    ClaimCreditsResponse:
+      type: object
+      required:
+        [speak_agent_id, invoice_id, order_id, order_status, credited_chars, already_credited, characters_remaining]
+      properties:
+        speak_agent_id:
+          type: string
+        invoice_id:
+          type: string
+        order_id:
+          type: string
+        order_status:
+          type: string
+          enum: [OPEN, PAID, CREDITED, EXPIRED, CANCELED]
+        credited_chars:
+          type: integer
+        already_credited:
+          type: boolean
+        characters_remaining:
+          type: integer
+    VoicesResponse:
+      type: object
+      required: [provider, voices, count]
+      properties:
+        provider:
+          type: string
+        voices:
+          type: array
+          items:
+            type: object
+            required: [voice_id, name]
+            properties:
+              voice_id:
+                type: string
+              name:
+                type: string
+              category:
+                type: string
+              labels:
+                type: object
+                additionalProperties:
+                  type: string
+        count:
+          type: integer
+    CreateTtsJobRequest:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 5000
+        voice_id:
+          type: string
+        model_id:
+          type: string
+        output_format:
+          type: string
+        voice_settings:
+          type: object
+          properties:
+            stability:
+              type: number
+            similarity_boost:
+              type: number
+            style:
+              type: number
+            use_speaker_boost:
+              type: boolean
+    CreateTtsJobResponse:
+      type: object
+      required: [speak_agent_id, job_id, status, estimated_chars, characters_remaining, poll_url]
+      properties:
+        speak_agent_id:
+          type: string
+        job_id:
+          type: string
+        status:
+          type: string
+          enum: [queued]
+        estimated_chars:
+          type: integer
+        characters_remaining:
+          type: integer
+        poll_url:
+          type: string
+    TtsJobRecord:
+      type: object
+      required: [id, agent_id, status, created_at, request, usage]
+      properties:
+        id:
+          type: string
+        agent_id:
+          type: string
+        status:
+          type: string
+          enum: [queued, running, done, failed]
+        created_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+        request:
+          type: object
+          required: [text, text_length, voice_id, model_id, output_format]
+          properties:
+            text:
+              type: string
+            text_length:
+              type: integer
+            voice_id:
+              type: string
+            model_id:
+              type: string
+            output_format:
+              type: string
+        usage:
+          type: object
+          required: [estimated_chars, reserved_chars]
+          properties:
+            estimated_chars:
+              type: integer
+            reserved_chars:
+              type: integer
+            actual_chars:
+              type: integer
+            refunded_chars:
+              type: integer
+        result:
+          type: object
+          properties:
+            download_url:
+              type: string
+            mime_type:
+              type: string
+            size_bytes:
+              type: integer
+            sha256:
+              type: string
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+    GwopWebhookEvent:
+      type: object
+      required: [event_type, data]
+      properties:
+        event_type:
+          type: string
+          example: invoice.paid
+        data:
+          type: object
+          required: [invoice_id]
+          properties:
+            invoice_id:
+              type: string
+            status:
+              type: string

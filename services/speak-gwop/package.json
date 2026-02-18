@@ -1,0 +1,31 @@
+{
+  "name": "speak-gwop",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Standalone metered agent TTS API demo built on ElevenLabs SDK",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "dev:worker": "tsx watch src/worker.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "start:worker": "node dist/worker.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.992.0",
+    "@aws-sdk/s3-request-presigner": "^3.992.0",
+    "@elevenlabs/elevenlabs-js": "^2.18.0",
+    "bullmq": "^5.69.3",
+    "dotenv": "^17.2.3",
+    "express": "^4.21.0",
+    "gwop-checkout": "file:../../packages/gwop-checkout",
+    "pg": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.0",
+    "@types/pg": "^8.16.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  }
+}

@@ -1,0 +1,151 @@
+profile:
+  id: gwop-checkout-v1
+  name: Gwop Checkout (Self-Hosted)
+  status: active
+  extracted_from: ./openapi.yaml
+  extracted_on: 2026-02-17
+  intent: >
+    Stripe-like payment primitives for self-hosted stores.
+    Store catalog/fulfillment remain in merchant infrastructure, not Gwop.
+
+boundaries:
+  include_path_prefixes:
+    - /v1/merchants/
+    - /v1/invoices/
+  exclude_path_prefixes:
+    - /v1/merchants/store/
+    - /store/
+    - /v1/agents/
+    - /v1/agent/
+    - /v1/payment-intents/
+  explicit_exclusions:
+    - path: /v1/invoices/{id}/delivery
+      reason: Hosted storefront delivery recovery; tied to gwop-pro/store_orders semantics.
+    - path: /v1/merchants/help
+      reason: Human/agent guidance endpoint, not required for checkout runtime.
+    - path: /v1/merchants/claim/{token}/preview
+      reason: Human claim UX flow; not required for payment runtime.
+    - path: /v1/merchants/claim/complete
+      reason: Human claim completion flow; not required for payment runtime.
+
+operations:
+  required:
+    - method: GET
+      path: /v1/merchants/init/preflight
+      operation_id: getMerchantInitPreflight
+      auth: public
+      request_schema: null
+      response_schema: MerchantInitPreflight
+    - method: POST
+      path: /v1/merchants/init
+      operation_id: initMerchant
+      auth: public
+      required_headers:
+        - Idempotency-Key
+      request_schema: MerchantInitRequest
+      response_schema: MerchantInitResponse
+    - method: GET
+      path: /v1/merchants/status
+      operation_id: getMerchantStatus
+      auth: MerchantApiKey
+      request_schema: null
+      response_schema: MerchantStatusResponse
+    - method: POST
+      path: /v1/merchants/settings
+      operation_id: updateMerchantSettingsApiKey
+      auth: MerchantApiKey
+      request_schema: MerchantSettingsUpdateRequestPublic
+      response_schema: MerchantProfilePublic
+    - method: POST
+      path: /v1/merchants/webhook-secret
+      operation_id: generateWebhookSecretApiKey
+      auth: MerchantApiKey
+      request_schema: null
+      response_schema: WebhookSecretResponse
+    - method: POST
+      path: /v1/invoices
+      operation_id: createInvoice
+      auth: MerchantApiKey
+      optional_headers:
+        - Idempotency-Key
+      request_schema: CreateInvoiceRequest
+      response_schema: CreateInvoiceResponse
+    - method: GET
+      path: /v1/invoices
+      operation_id: listInvoices
+      auth: MerchantApiKey
+      request_schema: null
+      response_schema: InvoiceListResponse
+    - method: GET
+      path: /v1/invoices/{id}
+      operation_id: getInvoice
+      auth: public
+      request_schema: null
+      response_schema: InvoicePublic
+    - method: POST
+      path: /v1/invoices/{id}/cancel
+      operation_id: cancelInvoice
+      auth: MerchantApiKey
+      request_schema: null
+      response_schema: InvoiceCancelResponse
+    - method: POST
+      path: /v1/invoices/{id}/pay
+      operation_id: payInvoice
+      auth: AgentApiKey
+      request_schema: InvoicePayRequest
+      response_schema: InvoicePayResponse
+    - method: POST
+      path: /v1/invoices/{id}/verify-payment
+      operation_id: verifyExternalPayment
+      auth: public
+      request_schema: VerifyPaymentRequest
+      response_schema: VerifyPaymentResponse
+
+schemas:
+  required:
+    - MerchantInitPreflight
+    - MerchantInitRequest
+    - MerchantInitResponse
+    - MerchantStatusResponse
+    - MerchantSettingsUpdateRequestPublic
+    - MerchantProfilePublic
+    - WebhookSecretResponse
+    - CreateInvoiceRequest
+    - CreateInvoiceResponse
+    - InvoiceListResponse
+    - InvoicePublic
+    - InvoiceCancelResponse
+    - InvoicePayRequest
+    - InvoicePayResponse
+    - VerifyPaymentRequest
+    - VerifyPaymentResponse
+    - ErrorResponse
+
+response_components:
+  required:
+    - RateLimited
+    - Unauthorized
+    - BadRequest
+    - NotFound
+
+security_schemes:
+  required:
+    - MerchantApiKey
+    - AgentApiKey
+  out_of_scope:
+    - Auth0JWT
+
+sdk_contract:
+  package_target: gwop-checkout
+  must_not_call_path_prefixes:
+    - /v1/merchants/store/
+    - /store/
+  must_not_model_schemas:
+    - StoreCatalog
+    - StoreBuyResponse
+    - StoreDeliveryResponse
+    - SetDeliveryRequest
+    - SetDeliveryResponse
+  notes:
+    - SDK focuses on payment intents via invoices; no hosted catalog or hosted delivery methods.
+    - Webhook payload/signature verification contract is documented in ./webhooks.md.
