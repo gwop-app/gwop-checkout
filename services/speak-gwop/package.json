@@ -18,7 +18,7 @@
     "bullmq": "^5.69.3",
     "dotenv": "^17.2.3",
     "express": "^4.21.0",
-    "gwop-checkout": "file:../../packages/gwop-checkout",
+    "gwop-checkout": "^0.1.0",
     "pg": "^8.18.0"
   },
   "devDependencies": {

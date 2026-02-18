@@ -40,6 +40,5 @@ npm run dev:worker
 
 ## Deploy Notes
 
-Speak currently depends on the local SDK path (`../../packages/gwop-checkout`).
-For platform deploys, ensure build context includes both `services/speak-gwop` and `packages/gwop-checkout`.
-
+Speak uses the published `gwop-checkout` npm package.
+You can deploy `services/speak-gwop` with its own root directory.
