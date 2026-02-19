@@ -7,6 +7,7 @@ Internal docs for the self-hosted checkout surface.
 - Package: `packages/gwop-checkout`
 - Checkout profile (YAML): `packages/gwop-checkout/docs/gwop-checkout-profile.yaml`
 - Checkout profile (MD): `packages/gwop-checkout/docs/gwop-checkout-profile.md`
+- Production readiness checklist: `docs/checkout/PRODUCTION_READINESS.md`
 
 ## Purpose
 

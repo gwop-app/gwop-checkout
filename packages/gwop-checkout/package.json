@@ -4,10 +4,13 @@
   "description": "Gwop Checkout SDK - Stripe-like payment primitives for self-hosted stores",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gwop-io/gwop-node.git",
+    "url": "git+https://github.com/gwop-app/gwop-checkout.git",
     "directory": "packages/gwop-checkout"
   },
-  "homepage": "https://gwop.io",
+  "homepage": "https://github.com/gwop-app/gwop-checkout/tree/main/packages/gwop-checkout#readme",
+  "bugs": {
+    "url": "https://github.com/gwop-app/gwop-checkout/issues"
+  },
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",

@@ -1,44 +1,50 @@
 # gwop-checkout
 
-Standalone repository for:
+Monorepo for two distinct artifacts:
 
-- `packages/gwop-checkout`: Gwop Checkout SDK (Stripe-like primitives for self-hosted stores)
-- `services/speak-gwop`: Agent-native TTS store example powered by Gwop Checkout
+- `packages/gwop-checkout`: the publishable checkout SDK (`npm i gwop-checkout`)
+- `services/speak-gwop`: a reference self-hosted store using the SDK
 
-## Layout
+This repository intentionally keeps both together for fast iteration, while preserving a strict boundary:
 
-- `packages/gwop-checkout/` - publishable SDK package
-- `services/speak-gwop/` - standalone API + worker service
-- `docs/checkout/` - integration docs
-- `apis/` - checkout profile/spec references
+- SDK code must stay generic and checkout-only.
+- Example service code can be product-specific (Speak/TTS).
 
-## Quick Start
+## Repository layout
 
-SDK:
+- `packages/gwop-checkout/` - SDK source, tests, package docs
+- `services/speak-gwop/` - standalone API + worker reference implementation
+- `apis/` - checkout profile sources used for drift checks
+- `docs/checkout/` - integration and production-readiness guidance
+- `scripts/check-profile-sync.sh` - guards profile-doc drift in CI
 
-```bash
-cd packages/gwop-checkout
-npm ci
-npm run build
-```
-
-Speak service:
+## Quick start
 
 ```bash
-cd services/speak-gwop
-npm ci
-npm run build
-npm run dev
+# SDK
+npm ci --prefix packages/gwop-checkout
+npm run --prefix packages/gwop-checkout test:run
+npm run --prefix packages/gwop-checkout build
+
+# Speak example service
+npm ci --prefix services/speak-gwop
+npm run --prefix services/speak-gwop build
+npm run --prefix services/speak-gwop dev
+npm run --prefix services/speak-gwop dev:worker
 ```
 
-Worker:
+## CI
 
-```bash
-cd services/speak-gwop
-npm run dev:worker
-```
+GitHub Actions runs:
 
-## Deploy Notes
+1. checkout profile sync check
+2. SDK typecheck + test + build
+3. Speak example build
 
-Speak uses the published `gwop-checkout` npm package.
-You can deploy `services/speak-gwop` with its own root directory.
+## Split guidance
+
+If/when release cadence diverges:
+
+1. Keep this repo as SDK-only (`packages/gwop-checkout` + docs/apis).
+2. Move `services/speak-gwop` to `gwop-checkout-examples` or `speak-gwop`.
+3. Pin example apps to published SDK versions.

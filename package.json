@@ -1,0 +1,13 @@
+{
+  "name": "gwop-checkout-repo",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Monorepo containing the Gwop Checkout SDK and reference store examples.",
+  "scripts": {
+    "check:profile-sync": "bash ./scripts/check-profile-sync.sh",
+    "build:sdk": "npm --prefix packages/gwop-checkout run build",
+    "test:sdk": "npm --prefix packages/gwop-checkout run test:run",
+    "build:speak": "npm --prefix services/speak-gwop run build",
+    "ci": "npm run check:profile-sync && npm run test:sdk && npm run build:sdk && npm run build:speak"
+  }
+}

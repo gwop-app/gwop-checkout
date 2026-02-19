@@ -49,7 +49,7 @@ Self-hosted checkout stores should keep fulfillment and artifact delivery in the
 
 ## SDK Contract Rules
 
-1. Checkout SDK must only generate clients for operations listed in `/Users/gwop/Documents/gwop-new/apis/gwop-checkout-profile.yaml`.
+1. Checkout SDK must only generate clients for operations listed in `packages/gwop-checkout/docs/gwop-checkout-profile.yaml`.
 2. Checkout SDK must not expose any methods that call `/v1/merchants/store/*` or `/store/*`.
 3. Checkout SDK must model invoice/webhook setup only; no hosted catalog or hosted delivery abstractions.
-4. Webhook event signing/verification behavior is documented in `/Users/gwop/Documents/gwop-new/apis/webhooks.md`.
+4. Webhook event signing/verification behavior is documented in `packages/gwop-checkout/src/webhooks.ts`.

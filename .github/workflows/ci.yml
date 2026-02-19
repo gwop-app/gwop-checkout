@@ -1,0 +1,47 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  profile-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify checkout profile sync
+        run: bash ./scripts/check-profile-sync.sh
+
+  sdk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: packages/gwop-checkout/package-lock.json
+      - name: Install SDK deps
+        run: npm ci --prefix packages/gwop-checkout
+      - name: Typecheck SDK
+        run: npm run --prefix packages/gwop-checkout typecheck
+      - name: Test SDK
+        run: npm run --prefix packages/gwop-checkout test:run
+      - name: Build SDK
+        run: npm run --prefix packages/gwop-checkout build
+
+  speak:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: services/speak-gwop/package-lock.json
+      - name: Install speak deps
+        run: npm ci --prefix services/speak-gwop
+      - name: Build speak service
+        run: npm run --prefix services/speak-gwop build
